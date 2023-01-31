@@ -40,4 +40,6 @@
 
 #define LCD_CMD_SET_DD_ADDRESS 0b10000000
 
+#define LCD_SET_CGRAM 0b01000000
+
 #endif

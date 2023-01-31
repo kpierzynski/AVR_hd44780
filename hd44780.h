@@ -3,6 +3,7 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 
 #include "hd44780_mem.h"
 
@@ -32,7 +33,11 @@
 void lcd_init();
 
 void lcd_puts(char *str);
+void lcd_puts_P(const char *str);
 void lcd_putc(char chr);
+
+void lcd_def_char(uint8_t index, uint8_t *data);
+void lcd_def_char_P(uint8_t index, const uint8_t *data);
 
 void lcd_set(uint8_t x, uint8_t y);
 void lcd_clear();

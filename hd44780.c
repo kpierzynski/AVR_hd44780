@@ -6,6 +6,7 @@ void lcd_cmd_entry_mode(uint8_t id, uint8_t s);
 void lcd_cmd_display_control(uint8_t d, uint8_t c, uint8_t b);
 void lcd_cmd_function_set(uint8_t dl, uint8_t n, uint8_t f);
 
+void lcd_send(uint8_t byte);
 void lcd_send_data(uint8_t data);
 void lcd_send_cmd(uint8_t cmd);
 uint8_t lcd_read();
@@ -89,18 +90,17 @@ uint8_t lcd_busy()
 	return lcd_read() & 0x80;
 }
 
-void lcd_send_cmd(uint8_t cmd)
+void lcd_send(uint8_t byte)
 {
 	lcd_data_dir_out();
 	LCD_E_HIGH;
 
-	LCD_RS_LOW;
 	LCD_RW_LOW;
 
-	lcd_send_part(cmd >> 4);
+	lcd_send_part(byte >> 4);
 	LCD_E_LOW;
 	LCD_E_HIGH;
-	lcd_send_part(cmd);
+	lcd_send_part(byte);
 
 	LCD_E_LOW;
 
@@ -108,23 +108,16 @@ void lcd_send_cmd(uint8_t cmd)
 		;
 }
 
+void lcd_send_cmd(uint8_t cmd)
+{
+	LCD_RS_LOW;
+	lcd_send(cmd);
+}
+
 void lcd_send_data(uint8_t data)
 {
-	lcd_data_dir_out();
-	LCD_E_HIGH;
-
 	LCD_RS_HIGH;
-	LCD_RW_LOW;
-
-	lcd_send_part(data >> 4);
-	LCD_E_LOW;
-	LCD_E_HIGH;
-	lcd_send_part(data);
-
-	LCD_E_LOW;
-
-	while (lcd_busy())
-		;
+	lcd_send(data);
 }
 
 void lcd_putc(char chr)
@@ -137,6 +130,14 @@ void lcd_puts(char *str)
 	char c;
 
 	while ((c = *(str++)))
+		lcd_putc(c);
+}
+
+void lcd_puts_P(const char *str)
+{
+	char c;
+
+	while ((c = pgm_read_byte(str++)))
 		lcd_putc(c);
 }
 
@@ -166,6 +167,25 @@ void lcd_set(uint8_t x, uint8_t y)
 	lcd_send_cmd(LCD_CMD_SET_DD_ADDRESS + x + y);
 }
 
+void lcd_def_char(uint8_t index, uint8_t *data)
+{
+	lcd_send_cmd(LCD_SET_CGRAM + ((index & 0x07) * 8));
+	for (uint8_t i = 0; i < 8; i++)
+	{
+		lcd_send_data(data[i]);
+	}
+}
+
+void lcd_def_char_P(uint8_t index, const uint8_t *data)
+{
+	lcd_send_cmd(LCD_SET_CGRAM + ((index & 0x07) * 8));
+	for (uint8_t i = 0; i < 8; i++)
+	{
+		uint8_t c = pgm_read_byte(data + i);
+		lcd_send_data(c);
+	}
+}
+
 void lcd_init()
 {
 	LCD_PORT.DIR |= LCD_RS | LCD_RW | LCD_E;
@@ -180,6 +200,6 @@ void lcd_init()
 	_delay_ms(5);
 
 	lcd_cmd_function_set(LCD_DL_4BIT, LCD_N_2LINE, LCD_F_5x8DOTS);
-	lcd_cmd_display_control(LCD_D_ON, LCD_C_OFF, LCD_B_OFF);
+	lcd_cmd_display_control(LCD_D_ON, LCD_C_ON, LCD_B_OFF);
 	lcd_cmd_entry_mode(LCD_ID_INC, LCD_S_SHIFT_OFF);
 }
